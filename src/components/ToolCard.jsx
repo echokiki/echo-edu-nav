@@ -2,8 +2,10 @@ import React from 'react';
 import styles from './ToolCard.module.css';
 
 export default function ToolCard({ item }) {
+  const resolvedUrl = item.url?.startsWith('/') ? '.' + item.url : item.url;
+  
   return (
-    <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.card}>
+    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className={styles.card}>
       <div className={styles.iconWrapper}>
         <span className="material-symbols-outlined">api</span>
       </div>

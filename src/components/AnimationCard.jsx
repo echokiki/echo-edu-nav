@@ -2,14 +2,16 @@ import React from 'react';
 import styles from './AnimationCard.module.css';
 
 export default function AnimationCard({ item }) {
+  const resolvedUrl = item.url?.startsWith('/') ? '.' + item.url : item.url;
+  
   return (
-    <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.card}>
+    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className={styles.card}>
       <div className={styles.thumbnailContainer}>
         {item.thumbnail ? (
           <img src={item.thumbnail} alt={item.title} className={styles.thumbnail} />
         ) : item.url && item.url.includes('.html') ? (
           <div className={styles.iframeWrapper}>
-            <iframe src={item.url} title={item.title} className={styles.iframePreview} tabIndex="-1" />
+            <iframe src={resolvedUrl} title={item.title} className={styles.iframePreview} tabIndex="-1" />
             <div className={styles.iframeOverlay}></div>
           </div>
         ) : (
