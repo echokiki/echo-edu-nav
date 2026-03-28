@@ -6,10 +6,11 @@
       "id": "math_animations",
       "title": "数学思维",
       "icon": "calculate",
+      "type": "animation",
       "items": [
         {
           "title": "圆柱与圆锥体积关系",
-          "description": "自定义开发：探索同底等高、同体积下的变量关系动态图库",
+          "description": "探索同底等高、同体积下的变量关系动态图库",
           "url": "/animations/cylinder-cone-volume.html",
           "thumbnail": "",
           "tags": ["几何", "探究空间"]
@@ -20,7 +21,16 @@
       "id": "physics_visualization",
       "title": "物理可视化",
       "icon": "science",
-      "items": []
+      "type": "animation",
+      "items": [
+        {
+          "title": "等待添加中...",
+          "description": "物理力学、电学、光学动态可视化动画即将上线",
+          "url": "#",
+          "thumbnail": "",
+          "tags": ["预告", "物理"]
+        }
+      ]
     }
   ]
 }
