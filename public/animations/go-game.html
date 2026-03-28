@@ -6,51 +6,53 @@
     <title>围棋大师：段位级气可视化系统 - Echo 教育</title>
     <style>
         :root {
-            --bg-wood: #fbe9c6; /* Lighter wood */
-            --line-color: #5d4037;
-            --stone-black: #1a1a1a;
+            --bg-page: #fdfdfb;
+            --bg-wood: #fcf3cf; /* Premium sand wood */
+            --line-color: #795548;
+            --stone-black: #2c3e50;
             --stone-white: #ffffff;
-            --accent-terracotta: #d88a75;
+            --accent-terracotta: #cd6155;
             --font-serif: 'Playfair Display', "Noto Serif SC", serif;
-            --font-sans: 'Inter', "Noto Sans SC", sans-serif;
-            --spirit-green: #66bb6a;
-            --spirit-orange: #ffa726;
-            --spirit-red: #ef5350;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            
+            /* Fluid Spirit Colors */
+            --spirit-safe: #a8e6cf;
+            --spirit-warn: #ffd3b6;
+            --spirit-panic: #ffaaa5;
+            --spirit-danger: #ff8b94;
         }
 
         body {
             margin: 0;
             padding: 0;
-            background-color: #fcfcfc;
+            background-color: var(--bg-page);
             font-family: var(--font-sans);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
             min-height: 100vh;
-            overflow-x: hidden;
-            padding-top: 20px;
+            padding-top: 15px;
+            color: #444;
         }
 
         .container {
-            position: relative;
             background: #fff;
-            padding: 20px 30px;
-            border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            padding: 20px 25px;
+            border-radius: 28px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             max-width: 95vw;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 1.4rem;
-            color: #444;
+            font-size: 1.3rem;
+            color: #333;
             font-family: var(--font-serif);
-            letter-spacing: 0.5px;
+            font-weight: 700;
         }
 
         /* Controls Panel */
@@ -58,73 +60,57 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             width: 100%;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f2f2f2;
         }
 
         .control-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .control-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #999;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #bbb;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-group {
             display: flex;
-            background: #f5f5f5;
-            padding: 3px;
-            border-radius: 12px;
+            background: #f7f7f7;
+            padding: 2px;
+            border-radius: 10px;
         }
 
         .btn-toggle {
-            padding: 6px 12px;
+            padding: 5px 10px;
             border: none;
             background: transparent;
-            border-radius: 9px;
-            font-size: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: #777;
+            color: #888;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .btn-toggle.active {
             background: #fff;
             color: var(--accent-terracotta);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
         .status-info {
             display: flex;
-            gap: 20px;
-            font-size: 0.85rem;
+            gap: 15px;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: #555;
         }
-
-        .turn-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .turn-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ccc;
-        }
-
-        .turn-dot.black { background: var(--stone-black); }
-        .turn-dot.white { background: var(--stone-white); border: 1px solid #ddd; }
 
         /* Go Board Area */
         .board-container {
@@ -134,9 +120,8 @@
 
         canvas {
             background: var(--bg-wood);
-            border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
             display: block;
         }
 
@@ -147,41 +132,73 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+            overflow: hidden;
         }
 
-        /* Liberty Spirit Styling */
+        /* --- SPIRIT MORPHING SYSTEM --- */
         .spirit {
             position: absolute;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             transform: translate(-50%, -50%);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            animation: float 2s ease-in-out infinite;
-        }
-
-        .spirit-count {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: white;
-            color: #333;
-            font-size: 10px;
-            font-weight: 800;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translate(-50%, -52%); }
-            50% { transform: translate(-50%, -48%); }
+        .spirit svg {
+            width: 100%;
+            height: 100%;
+            transition: fill 0.6s ease, transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
         }
 
-        /* SVG Liberty Icons Content - Defined in CSS as bg if needed, or JS */
+        /* Animations */
+        @keyframes spirit-breath {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 0.95; }
+        }
+
+        @keyframes spirit-wobble {
+            0%, 100% { transform: rotate(-3deg) scale(1.05); }
+            50% { transform: rotate(3deg) scale(1.1); }
+        }
+
+        @keyframes spirit-panic {
+            0%, 100% { transform: translate(-1px, -1px) scale(1.2); }
+            25% { transform: translate(1px, 1px) scale(1.2); }
+            50% { transform: translate(-1px, 1px) scale(1.2); }
+            75% { transform: translate(1px, -1px) scale(1.2); }
+        }
+
+        /* State Classes */
+        .spirit.state-safe svg { fill: var(--spirit-safe); animation: spirit-breath 3s ease-in-out infinite; }
+        .spirit.state-warn svg { fill: var(--spirit-warn); animation: spirit-wobble 1.5s ease-in-out infinite; }
+        .spirit.state-panic svg { fill: var(--spirit-danger); animation: spirit-panic 0.15s linear infinite; }
+
+        /* Expressions */
+        .expression { transition: opacity 0.5s ease; opacity: 0; }
+        .spirit.state-safe .exp-happy { opacity: 1; }
+        .spirit.state-warn .exp-nervous { opacity: 1; }
+        .spirit.state-panic .exp-panic { opacity: 1; }
+
+        .spirit-count {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .spirit.show-count .spirit-count { opacity: 1; }
 
         .bottom-actions {
             display: flex;
@@ -190,18 +207,19 @@
         }
 
         .btn-action {
-            background: #f8f8f8;
+            background: #fafafa;
             border: 1px solid #eee;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            padding: 7px 14px;
+            border-radius: 10px;
+            font-size: 0.75rem;
             font-weight: 600;
-            color: #666;
+            color: #777;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .btn-action:hover {
+            background: #fff;
             border-color: var(--accent-terracotta);
             color: var(--accent-terracotta);
         }
@@ -216,7 +234,7 @@
 
         <div class="toolbar">
             <div class="control-group">
-                <span class="control-label">棋盘尺寸</span>
+                <span class="control-label">棋盘</span>
                 <div class="btn-group" id="sizeGroup">
                     <button class="btn-toggle" data-size="9">9x9</button>
                     <button class="btn-toggle" data-size="13">13x13</button>
@@ -225,7 +243,7 @@
             </div>
 
             <div class="control-group">
-                <span class="control-label">难度模式</span>
+                <span class="control-label">模式</span>
                 <div class="btn-group" id="modeGroup">
                     <button class="btn-toggle active" data-mode="newbie">新手</button>
                     <button class="btn-toggle" data-mode="intermediate">进阶</button>
@@ -234,12 +252,9 @@
             </div>
         </div>
 
-        <div class="status-info">
-            <div class="turn-box">
-                <div id="turnDot" class="turn-dot black"></div>
-                <span id="turnText">黑棋回合</span>
-            </div>
-            <div id="captureInfo">提子: B 0 | W 0</div>
+        <div class="status-info" id="statusPanel">
+            <span id="turnLabel">黑棋回合</span>
+            <span id="captureLabel">提子: 0 | 0</span>
         </div>
 
         <div class="board-container">
@@ -249,34 +264,8 @@
 
         <div class="bottom-actions">
             <button class="btn-action" id="undoBtn">悔棋</button>
-            <button class="btn-action" id="resetBtn">重置</button>
+            <button class="btn-action" id="resetBtn">重置局势</button>
         </div>
-    </div>
-
-    <!-- Hidden SVG Templates -->
-    <div style="display:none;">
-        <svg id="tpl-happy" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="#66bb6a" opacity="0.8"/>
-            <path d="M30 45 Q35 40 40 45" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
-            <path d="M60 45 Q65 40 70 45" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
-            <path d="M35 65 Q50 75 65 65" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
-        </svg>
-        <svg id="tpl-nervous" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="#ffa726" opacity="0.8"/>
-            <circle cx="35" cy="45" r="5" fill="white"/>
-            <circle cx="65" cy="45" r="8" fill="white"/>
-            <path d="M40 70 L60 70" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
-            <path d="M75 30 Q80 35 75 40" stroke="#bbdefb" stroke-width="3" fill="none"/>
-        </svg>
-        <svg id="tpl-panic" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="#ef5350" opacity="0.9"/>
-            <path d="M25 40 L40 50 M25 50 L40 40" stroke="white" stroke-width="6" stroke-linecap="round"/>
-            <path d="M60 40 L75 50 M60 50 L75 40" stroke="white" stroke-width="6" stroke-linecap="round"/>
-            <path d="M40 75 Q50 65 60 75" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
-            <circle cx="80" cy="40" r="4" fill="#bbdefb">
-                <animate attributeName="cy" values="40;60;40" dur="1s" repeatCount="indefinite" />
-            </circle>
-        </svg>
     </div>
 
     <script>
@@ -284,23 +273,17 @@
         const ctx = canvas.getContext('2d');
         const uiLayer = document.getElementById('uiLayer');
         
+        // State
         let boardSize = 19;
-        let mode = 'newbie'; // newbie, intermediate, pro
+        let mode = 'newbie';
         let board = [];
-        let turn = 1; // 1: black, 2: white
+        let turn = 1; 
         let history = [];
         let captures = { 1: 0, 2: 0 };
+        let spiritElements = new Map(); // Track spirits for smooth transitions
 
-        // Configuration
-        const config = {
-            padding: 30,
-            get cellSize() {
-                // Responsive cell size
-                const maxW = Math.min(window.innerWidth * 0.85, 600);
-                return Math.floor((maxW - padding*2) / (boardSize - 1));
-            }
-        };
-        let padding = 30;
+        // Layout
+        let padding = 25;
         let cellSize = 28;
 
         function initBoard() {
@@ -313,8 +296,8 @@
         }
 
         function resizeCanvas() {
-            const availableSpace = Math.min(window.innerWidth * 0.9, 650);
-            cellSize = Math.floor((availableSpace - padding * 2) / (boardSize - 1));
+            const containerW = Math.min(window.innerWidth * 0.9, 620);
+            cellSize = Math.floor((containerW - padding * 2) / (boardSize - 1));
             const size = (boardSize - 1) * cellSize + padding * 2;
             canvas.width = size;
             canvas.height = size;
@@ -327,34 +310,30 @@
 
         function drawBoard() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Grid lines
-            ctx.strokeStyle = '#5d4037';
+            ctx.strokeStyle = '#8d6e63';
             ctx.lineWidth = 0.8;
+            
+            // Grid
             ctx.beginPath();
             for (let i = 0; i < boardSize; i++) {
-                ctx.moveTo(padding + i * cellSize, padding);
-                ctx.lineTo(padding + i * cellSize, padding + (boardSize - 1) * cellSize);
-                ctx.moveTo(padding, padding + i * cellSize);
-                ctx.lineTo(padding + (boardSize - 1) * cellSize, padding + i * cellSize);
+                const pos = padding + i * cellSize;
+                ctx.moveTo(pos, padding);
+                ctx.lineTo(pos, padding + (boardSize - 1) * cellSize);
+                ctx.moveTo(padding, pos);
+                ctx.lineTo(padding + (boardSize - 1) * cellSize, pos);
             }
             ctx.stroke();
 
-            // Star points (Hoshi)
-            const hoshi = [];
-            if (boardSize === 19) {
-                [3, 9, 15].forEach(i => [3, 9, 15].forEach(j => hoshi.push([i, j])));
-            } else if (boardSize === 13) {
-                [3, 6, 9].forEach(i => [3, 6, 9].forEach(j => hoshi.push([i, j])));
-            } else if (boardSize === 9) {
-                [2, 6].forEach(i => [2, 6].forEach(j => hoshi.push([i, j])));
-                hoshi.push([4, 4]);
-            }
-
-            ctx.fillStyle = '#5d4037';
-            hoshi.forEach(([r, c]) => {
+            // Hoshi
+            const h = [];
+            if (boardSize === 19) [3, 9, 15].forEach(i => [3, 9, 15].forEach(j => h.push([i, j])));
+            else if (boardSize === 13) [3, 6, 9].forEach(i => [3, 6, 9].forEach(j => h.push([i, j])));
+            else if (boardSize === 9) { [2, 6].forEach(i => [2, 6].forEach(j => h.push([i, j]))); h.push([4, 4]); }
+            
+            ctx.fillStyle = '#8d6e63';
+            h.forEach(([r, c]) => {
                 ctx.beginPath();
-                ctx.arc(padding + c * cellSize, padding + r * cellSize, 3, 0, Math.PI * 2);
+                ctx.arc(padding + c * cellSize, padding + r * cellSize, 3, 0, Math.PI*2);
                 ctx.fill();
             });
 
@@ -371,49 +350,35 @@
         function drawStone(r, c, type) {
             const x = padding + c * cellSize;
             const y = padding + r * cellSize;
-            const rad = cellSize * 0.46;
-
+            const rad = cellSize * 0.45;
             ctx.save();
             ctx.shadowBlur = 4;
             ctx.shadowColor = 'rgba(0,0,0,0.2)';
             ctx.shadowOffsetY = 2;
-
-            const grad = ctx.createRadialGradient(x - rad*0.3, y - rad*0.3, rad*0.1, x, y, rad);
-            if (type === 1) {
-                grad.addColorStop(0, '#555');
-                grad.addColorStop(1, '#111');
-            } else {
-                grad.addColorStop(0, '#fff');
-                grad.addColorStop(1, '#ddd');
-            }
-
+            const grad = ctx.createRadialGradient(x-rad*0.3, y-rad*0.3, rad*0.1, x, y, rad);
+            if (type === 1) { grad.addColorStop(0, '#555'); grad.addColorStop(1, '#1a1a1a'); }
+            else { grad.addColorStop(0, '#fff'); grad.addColorStop(1, '#eee'); }
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(x, y, rad, 0, Math.PI * 2);
+            ctx.arc(x, y, rad, 0, Math.PI*2);
             ctx.fill();
             ctx.restore();
         }
 
-        // --- Game Logic ---
-
-        function getGroup(r, c) {
-            const color = board[r][c];
-            const stones = [];
-            const liberties = new Set();
-            const visited = new Set();
+        // --- Core Engine ---
+        function getGroup(r, c, b = board) {
+            const color = b[r][c];
+            const stones = [], liberties = new Set(), visited = new Set();
             const stack = [[r, c]];
-
-            while (stack.length > 0) {
+            while (stack.length) {
                 const [cr, cc] = stack.pop();
                 const key = `${cr},${cc}`;
                 if (visited.has(key)) continue;
-                visited.add(key);
-                stones.push([cr, cc]);
-
+                visited.add(key); stones.push([cr, cc]);
                 [[cr-1, cc], [cr+1, cc], [cr, cc-1], [cr, cc+1]].forEach(([nr, nc]) => {
                     if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
-                        if (board[nr][nc] === 0) liberties.add(`${nr},${nc}`);
-                        else if (board[nr][nc] === color) stack.push([nr, nc]);
+                        if (b[nr][nc] === 0) liberties.add(`${nr},${nc}`);
+                        else if (b[nr][nc] === color) stack.push([nr, nc]);
                     }
                 });
             }
@@ -422,141 +387,151 @@
 
         function play(r, c) {
             if (board[r][c] !== 0) return;
-
-            const temp = JSON.parse(JSON.stringify(board));
-            board[r][c] = turn;
-            
+            const next = JSON.parse(JSON.stringify(board));
+            next[r][c] = turn;
             const opp = turn === 1 ? 2 : 1;
-            let captured = false;
-
+            let capturedAny = false;
+            
             [[r-1, c], [r+1, c], [r, c-1], [r, c+1]].forEach(([nr, nc]) => {
-                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && board[nr][nc] === opp) {
-                    const g = getGroup(nr, nc);
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && next[nr][nc] === opp) {
+                    const g = getGroup(nr, nc, next);
                     if (g.liberties.length === 0) {
-                        g.stones.forEach(([sr, sc]) => {
-                            board[sr][sc] = 0;
-                            captures[turn]++;
-                        });
-                        captured = true;
+                        g.stones.forEach(([sr, sc]) => { next[sr][sc] = 0; captures[turn]++; });
+                        capturedAny = true;
                     }
                 }
             });
 
-            const myG = getGroup(r, c);
-            if (!captured && myG.liberties.length === 0) {
-                board = temp;
-                alert("禁着点！");
-                return;
-            }
+            if (!capturedAny && getGroup(r, c, next).liberties.length === 0) return alert("禁着点！");
 
-            history.push(temp);
+            history.push(JSON.parse(JSON.stringify(board)));
+            board = next;
             turn = opp;
             render();
         }
 
-        // --- Visual System ---
-
+        // --- FLUID SPIRIT ENGINE ---
         function updateLibertySpirits() {
-            uiLayer.innerHTML = '';
-            if (mode === 'pro') return;
+            if (mode === 'pro') { 
+                uiLayer.innerHTML = ''; 
+                spiritElements.clear(); 
+                return; 
+            }
 
-            const spiritMap = new Map();
+            const activeMap = new Map();
             const checked = new Set();
 
+            // Calculate min liberties per empty intersection
             for (let r = 0; r < boardSize; r++) {
                 for (let c = 0; c < boardSize; c++) {
                     if (board[r][c] !== 0 && !checked.has(`${r},${c}`)) {
                         const g = getGroup(r, c);
                         g.stones.forEach(s => checked.add(`${s[0]},${s[1]}`));
-                        
                         const count = g.liberties.length;
-                        // Mode filtering
                         if (mode === 'intermediate' && count > 2) continue;
-
                         g.liberties.forEach(l => {
-                            if (!spiritMap.has(l) || spiritMap.get(l) > count) {
-                                spiritMap.set(l, count);
-                            }
+                            if (!activeMap.has(l) || activeMap.get(l) > count) activeMap.set(l, count);
                         });
                     }
                 }
             }
 
-            spiritMap.forEach((count, loc) => {
-                const [lr, lc] = loc.split(',').map(Number);
-                const spirit = document.createElement('div');
-                spirit.className = 'spirit';
-                spirit.style.left = `${padding + lc * cellSize}px`;
-                spirit.style.top = `${padding + lr * cellSize}px`;
+            // Clean up removed spirits
+            for (const [key, el] of spiritElements) {
+                if (!activeMap.has(key)) {
+                    el.style.transform = 'translate(-50%, -50%) scale(0)';
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 500);
+                    spiritElements.delete(key);
+                }
+            }
 
-                let tplId = 'tpl-happy';
-                if (count === 1) tplId = 'tpl-panic';
-                else if (count === 2) tplId = 'tpl-nervous';
+            // Sync active spirits
+            activeMap.forEach((count, key) => {
+                const [lr, lc] = key.split(',').map(Number);
+                let spirit = spiritElements.get(key);
 
-                const svg = document.getElementById(tplId).cloneNode(true);
-                svg.style.display = 'block';
-                spirit.appendChild(svg);
-
-                if (mode === 'intermediate' || count <= 2) {
-                    const bubble = document.createElement('div');
-                    bubble.className = 'spirit-count';
-                    bubble.innerText = count;
-                    spirit.appendChild(bubble);
+                if (!spirit) {
+                    spirit = document.createElement('div');
+                    spirit.className = 'spirit';
+                    spirit.style.left = `${padding + lc * cellSize}px`;
+                    spirit.style.top = `${padding + lr * cellSize}px`;
+                    spirit.style.transform = 'translate(-50%, -50%) scale(0)';
+                    
+                    spirit.innerHTML = `
+                        <svg viewBox="0 0 100 100">
+                            <!-- Fluid Body -->
+                            <path class="spirit-body" d="M50 5 Q85 15 95 50 Q85 85 50 95 Q15 85 5 50 Q15 15 50 5 Z" />
+                            <!-- Faces -->
+                            <g class="expression exp-happy">
+                                <path d="M30 45 Q35 40 40 45 M60 45 Q65 40 70 45" stroke="rgba(255,255,255,0.7)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                                <path d="M35 65 Q50 78 65 65" stroke="rgba(255,255,255,0.7)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            </g>
+                            <g class="expression exp-nervous">
+                                <circle cx="35" cy="45" r="7" fill="rgba(255,255,255,0.8)"/>
+                                <circle cx="65" cy="45" r="9" fill="rgba(255,255,255,0.8)"/>
+                                <path d="M40 70 L60 70" stroke="rgba(255,255,255,0.8)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                            </g>
+                            <g class="expression exp-panic">
+                                <path d="M25 40 L45 55 M25 55 L45 40 M55 40 L75 55 M55 55 L75 40" stroke="white" stroke-width="8" stroke-linecap="round"/>
+                                <path d="M35 75 Q50 62 65 75" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+                            </g>
+                        </svg>
+                        <div class="spirit-count"></div>
+                    `;
+                    uiLayer.appendChild(spirit);
+                    spiritElements.set(key, spirit);
+                    requestAnimationFrame(() => spirit.style.transform = 'translate(-50%, -50%) scale(1)');
                 }
 
-                uiLayer.appendChild(spirit);
+                // Update State
+                const state = count === 1 ? 'state-panic' : (count === 2 ? 'state-warn' : 'state-safe');
+                spirit.classList.remove('state-safe', 'state-warn', 'state-panic');
+                spirit.classList.add(state);
+                
+                if (mode === 'intermediate' || count <= 2) {
+                    spirit.classList.add('show-count');
+                    spirit.querySelector('.spirit-count').innerText = count;
+                } else {
+                    spirit.classList.remove('show-count');
+                }
             });
         }
 
         function updateUI() {
-            document.getElementById('turnDot').className = `turn-dot ${turn === 1 ? 'black' : 'white'}`;
-            document.getElementById('turnText').innerText = turn === 1 ? '黑棋回合' : '白棋回合';
-            document.getElementById('captureInfo').innerText = `提子: B ${captures[1]} | W ${captures[2]}`;
+            document.getElementById('turnLabel').innerText = turn === 1 ? '● 黑棋回合' : '○ 白棋回合';
+            document.getElementById('turnLabel').style.color = turn === 1 ? '#000' : '#888';
+            document.getElementById('captureLabel').innerText = `提子: B ${captures[1]} | W ${captures[2]}`;
         }
 
         // --- Events ---
-
-        canvas.addEventListener('click', (e) => {
+        canvas.addEventListener('click', e => {
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const r = Math.round((y - padding) / cellSize);
-            const c = Math.round((x - padding) / cellSize);
+            const x = e.clientX - rect.left, y = e.clientY - rect.top;
+            const r = Math.round((y - padding) / cellSize), c = Math.round((x - padding) / cellSize);
             if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) play(r, c);
         });
 
-        document.getElementById('sizeGroup').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                if (confirm("切换棋盘大小将重置当前对局，确认吗？")) {
-                    document.querySelectorAll('#sizeGroup button').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    boardSize = parseInt(e.target.dataset.size);
-                    initBoard();
-                }
-            }
-        });
-
-        document.getElementById('modeGroup').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                document.querySelectorAll('#modeGroup button').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                mode = e.target.dataset.mode;
-                render();
-            }
-        });
-
-        document.getElementById('undoBtn').onclick = () => {
-            if (history.length > 0) {
-                board = history.pop();
-                turn = turn === 1 ? 2 : 1;
-                render();
+        document.getElementById('sizeGroup').onclick = e => {
+            if (e.target.tagName === 'BUTTON' && confirm("切换尺寸将重置当前对局")) {
+                document.querySelectorAll('#sizeGroup button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active'); boardSize = parseInt(e.target.dataset.size);
+                spiritElements.clear(); uiLayer.innerHTML = '';
+                initBoard();
             }
         };
 
+        document.getElementById('modeGroup').onclick = e => {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelectorAll('#modeGroup button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active'); mode = e.target.dataset.mode; render();
+            }
+        };
+
+        document.getElementById('undoBtn').onclick = () => { if (history.length) { board = history.pop(); turn = turn === 1 ? 2 : 1; render(); } };
         document.getElementById('resetBtn').onclick = () => { if(confirm("重置棋盘？")) initBoard(); };
 
         window.onresize = () => { resizeCanvas(); render(); };
-
         initBoard();
     </script>
 </body>
