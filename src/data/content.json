@@ -31,6 +31,21 @@
           "tags": ["预告", "物理"]
         }
       ]
+    },
+    {
+      "id": "general_encyclopedia",
+      "title": "综合百科",
+      "icon": "auto_stories",
+      "type": "animation",
+      "items": [
+        {
+          "title": "围棋入门：气的可视化",
+          "description": "互动式围棋棋盘，实时追踪每一手棋的『气』，带表情动态反馈。",
+          "url": "/animations/go-game.html",
+          "thumbnail": "",
+          "tags": ["百科", "围棋", "互动"]
+        }
+      ]
     }
   ]
 }
