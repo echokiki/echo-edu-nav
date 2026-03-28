@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>围棋入门：气的可视化 - Echo 教育</title>
+    <style>
+        :root {
+            --bg-wood: #dcb35c;
+            --line-color: #3e2723;
+            --stone-black: #212121;
+            --stone-white: #ffffff;
+            --accent-terracotta: #cc7a67;
+            --font-serif: 'Playfair Display', "Noto Serif SC", serif;
+            --font-sans: 'Inter', "Noto Sans SC", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #faf9f6;
+            font-family: var(--font-sans);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            background: #fff;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+            font-family: var(--font-serif);
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .turn-indicator {
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: #eee;
+            transition: all 0.3s ease;
+        }
+
+        .turn-indicator.active-black {
+            background: var(--stone-black);
+            color: white;
+        }
+
+        .turn-indicator.active-white {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        /* Go Board */
+        .board-wrapper {
+            position: relative;
+            user-select: none;
+        }
+
+        canvas {
+            background: var(--bg-wood);
+            border-radius: 8px;
+            box-shadow: 
+                inset 0 0 100px rgba(0,0,0,0.1),
+                0 10px 30px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+
+        /* Info Panel */
+        .legend {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .liberty-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1.5px dashed #666;
+        }
+
+        /* Animated Faces on Liberties */
+        .liberty-face {
+            pointer-events: none;
+            position: absolute;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 14px;
+            text-align: center;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: #eee;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--accent-terracotta);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #b66d5b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>围棋入门：会呼吸的「气」</h1>
+        </div>
+
+        <div class="status-bar">
+            <div id="turnIndicator" class="turn-indicator active-black">黑棋回合</div>
+            <div id="captureInfo">提子: 黑 0 | 白 0</div>
+        </div>
+
+        <div class="board-wrapper" id="boardWrapper">
+            <!-- Canvas will be here -->
+            <canvas id="goBoard"></canvas>
+            <div id="faceLayer"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="liberty-icon" style="border-style: solid; border-color:#4caf50;"></div> 安全 (3+气)</div>
+            <div class="legend-item"><div class="liberty-icon" style="border-style: dashed; border-color:#ff9800;"></div> 紧张 (2气)</div>
+            <div class="legend-item"><div class="liberty-icon" style="border-style: dotted; border-color:#f44336;"></div> 打吃 (1气)</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="resetBtn">重置棋盘</button>
+            <button class="btn btn-primary" id="undoBtn">悔棋</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('goBoard');
+        const ctx = canvas.getContext('2d');
+        const faceLayer = document.getElementById('faceLayer');
+        const boardSize = 9;
+        const cellSize = 50;
+        const padding = 40;
+        const width = (boardSize - 1) * cellSize + padding * 2;
+        
+        canvas.width = width;
+        canvas.height = width;
+
+        let board = Array(boardSize).fill().map(() => Array(boardSize).fill(0)); // 0: empty, 1: black, 2: white
+        let turn = 1; // 1 for black, 2 for white
+        let history = [];
+        let captures = { 1: 0, 2: 0 };
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, width, width);
+            
+            // Draw lines
+            ctx.strokeStyle = '#3e2723';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < boardSize; i++) {
+                // Vertical
+                ctx.moveTo(padding + i * cellSize, padding);
+                ctx.lineTo(padding + i * cellSize, padding + (boardSize - 1) * cellSize);
+                // Horizontal
+                ctx.moveTo(padding, padding + i * cellSize);
+                ctx.lineTo(padding + (boardSize - 1) * cellSize, padding + i * cellSize);
+            }
+            ctx.stroke();
+
+            // Draw star points
+            const dots = [2, 4, 6];
+            ctx.fillStyle = '#3e2723';
+            for (let x of dots) {
+                for (let y of dots) {
+                    ctx.beginPath();
+                    ctx.arc(padding + x * cellSize, padding + y * cellSize, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw stones
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (board[r][c] !== 0) {
+                        drawStone(r, c, board[r][c]);
+                    }
+                }
+            }
+
+            updateLibertyVisualization();
+        }
+
+        function drawStone(r, c, type) {
+            const x = padding + c * cellSize;
+            const y = padding + r * cellSize;
+            
+            ctx.save();
+            // Shadow
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowOffsetY = 2;
+
+            const rad = cellSize * 0.45;
+            const grad = ctx.createRadialGradient(x - rad * 0.3, y - rad * 0.3, rad * 0.1, x, y, rad);
+            
+            if (type === 1) { // Black
+                grad.addColorStop(0, '#444');
+                grad.addColorStop(1, '#111');
+            } else { // White
+                grad.addColorStop(0, '#fff');
+                grad.addColorStop(1, '#ddd');
+            }
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, rad, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Go Logic ---
+
+        function getGroup(r, c) {
+            const color = board[r][c];
+            const group = [];
+            const liberties = new Set();
+            const visited = new Set();
+            const stack = [[r, c]];
+
+            while (stack.length > 0) {
+                const [currR, currC] = stack.pop();
+                const key = `${currR},${currC}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+                group.push([currR, currC]);
+
+                const neighbors = [[currR-1, currC], [currR+1, currC], [currR, currC-1], [currR, currC+1]];
+                for (let [nr, nc] of neighbors) {
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                        if (board[nr][nc] === 0) {
+                            liberties.add(`${nr},${nc}`);
+                        } else if (board[nr][nc] === color) {
+                            stack.push([nr, nc]);
+                        }
+                    }
+                }
+            }
+            return { stones: group, liberties };
+        }
+
+        function placeStone(r, c) {
+            if (board[r][c] !== 0) return;
+
+            const tempBoard = JSON.parse(JSON.stringify(board));
+            board[r][c] = turn;
+            
+            // Check for captures of opponent
+            const opponent = turn === 1 ? 2 : 1;
+            let capturedAny = false;
+            const neighbors = [[r-1, c], [r+1, c], [r, c-1], [r, c+1]];
+            
+            neighbors.forEach(([nr, nc]) => {
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && board[nr][nc] === opponent) {
+                    const group = getGroup(nr, nc);
+                    if (group.liberties.size === 0) {
+                        group.stones.forEach(([sr, sc]) => {
+                            board[sr][sc] = 0;
+                            captures[turn]++;
+                        });
+                        capturedAny = true;
+                    }
+                }
+            });
+
+            // Self-capture check (Suicide)
+            const myGroup = getGroup(r, c);
+            if (!capturedAny && myGroup.liberties.size === 0) {
+                board = tempBoard; // Illegal
+                alert("这是自杀位，不能落子哦！");
+                return;
+            }
+
+            history.push(tempBoard);
+            turn = turn === 1 ? 2 : 1;
+            updateUI();
+            drawBoard();
+        }
+
+        function updateUI() {
+            const indicator = document.getElementById('turnIndicator');
+            indicator.innerText = turn === 1 ? '黑棋回合' : '白棋回合';
+            indicator.className = `turn-indicator ${turn === 1 ? 'active-black' : 'active-white'}`;
+            document.getElementById('captureInfo').innerText = `提子: 黑 ${captures[1]} | 白 ${captures[2]}`;
+        }
+
+        // --- Liberty Visualization (Animated Faces) ---
+
+        function updateLibertyVisualization() {
+            faceLayer.innerHTML = '';
+            const allLibertyCounts = {};
+
+            // Calculate all groups
+            const checked = new Set();
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (board[r][c] !== 0 && !checked.has(`${r},${c}`)) {
+                        const group = getGroup(r, c);
+                        group.stones.forEach(s => checked.add(`${s[0]},${s[1]}`));
+                        
+                        const count = group.liberties.size;
+                        group.liberties.forEach(lib => {
+                            if (!allLibertyCounts[lib]) allLibertyCounts[lib] = [];
+                            allLibertyCounts[lib].push({ color: board[r][c], count });
+                        });
+                    }
+                }
+            }
+
+            // Draw indicators on liberties
+            for (let libKey in allLibertyCounts) {
+                const [r, c] = libKey.split(',').map(Number);
+                const info = allLibertyCounts[libKey];
+                
+                // Get minimum liberty count affecting this spot
+                const minCount = Math.min(...info.map(i => i.count));
+                
+                const face = document.createElement('div');
+                face.className = 'liberty-face';
+                face.style.left = `${padding + c * cellSize - 12} hidden`;
+                face.style.top = `${padding + r * cellSize - 12}px`;
+                face.style.left = `${padding + c * cellSize - 12}px`;
+
+                // Expressions and colors based on the most critical stone adjacent
+                let expression = 'o_o';
+                let color = '#4caf50';
+                let scale = 1;
+
+                if (minCount === 1) { // Atari!
+                    expression = 'Σ(>_<)';
+                    color = '#f44336';
+                    scale = 1.3;
+                    face.style.animation = 'pulse 1s infinite';
+                } else if (minCount === 2) {
+                    expression = '(o_O)';
+                    color = '#ff9800';
+                    scale = 1.1;
+                } else {
+                    expression = '^_^';
+                    color = '#4caf50';
+                    scale = 0.9;
+                }
+
+                face.innerHTML = `<span style="color:${color}; font-weight:bold; transform: scale(${scale});">${expression}</span>`;
+                faceLayer.appendChild(face);
+            }
+        }
+
+        // Events
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const r = Math.round((y - padding) / cellSize);
+            const c = Math.round((x - padding) / cellSize);
+
+            if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                placeStone(r, c);
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+            turn = 1;
+            captures = { 1: 0, 2: 0 };
+            history = [];
+            updateUI();
+            drawBoard();
+        });
+
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if (history.length > 0) {
+                board = history.pop();
+                turn = turn === 1 ? 2 : 1;
+                updateUI();
+                drawBoard();
+            }
+        });
+
+        // Initialize
+        drawBoard();
+        updateUI();
+
+    </script>
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</body>
+</html>
